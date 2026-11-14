@@ -1,0 +1,62 @@
+ifeq ($(strip $(DEVKITARM)),)
+$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+endif
+
+LIBPATHS    := -L/opt/devkitpro/libnds/lib
+LIBS        := -lfat -lnds9
+include $(DEVKITARM)/ds_rules
+
+TARGET      := openliero
+OUTPUT      := $(TARGET)
+BUILD       := build_nds
+
+CFILES      := gvl/support/bits.c gvl/system/system.c gvl/zlib/miniz.c mixer/mixer.c
+
+CPPFILES    := \
+	bobject.cpp bonus.cpp common.cpp console.cpp constants.cpp \
+	filesystem.cpp game.cpp gfx.cpp keys.cpp level.cpp main.cpp \
+	math.cpp ninjarope.cpp nobject.cpp rand.cpp reader.cpp \
+	replay.cpp settings.cpp sfx.cpp sobject.cpp stats_recorder.cpp \
+	sys.cpp text.cpp viewport.cpp weapon.cpp weapsel.cpp worm.cpp \
+	ai/dijkstra.cpp ai/predictive_ai.cpp nds_shim/nds_main.cpp nds_shim/nds_sdl.cpp \
+	controller/commonController.cpp controller/localController.cpp \
+	controller/replayController.cpp controller/stats_presenter.cpp \
+	gfx/blit.cpp gfx/font.cpp gfx/palette.cpp gfx/renderer.cpp gfx/sprite.cpp \
+	mixer/player.cpp \
+	menu/booleanSwitchBehavior.cpp menu/enumBehavior.cpp menu/hiddenMenu.cpp \
+	menu/integerBehavior.cpp menu/itemBehavior.cpp menu/menu.cpp \
+	menu/menuItem.cpp menu/timeBehavior.cpp menu/mainMenu.cpp \
+	gvl/containers/list.cpp gvl/io2/stream.cpp gvl/io/convert.cpp \
+	gvl/io/encoding.cpp gvl/io/stream.cpp gvl/support/debug.cpp \
+	gvl/support/platform.cpp gvl/support/profile.cpp gvl/resman/shared.cpp
+
+INCLUDES    := . nds_shim $(LIBNDS)/include
+
+ARCH        := -marm -mthumb-interwork
+CFLAGS      := -Wall -Wno-deprecated-declarations -Wno-reorder -Wno-sign-compare -O3 -flto -funroll-loops -march=armv5te -mtune=arm946e-s -fomit-frame-pointer -ffast-math $(ARCH)
+CFLAGS      += $(addprefix -I,$(INCLUDES)) $(_EXTRADEFS) -DARM9 -DNDEBUG
+CXXFLAGS    := $(CFLAGS) -std=gnu++11
+ASFLAGS     := -g $(ARCH)
+LDFLAGS      = -specs=ds_arm9.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+
+
+OFILES      := $(addprefix $(BUILD)/,$(CFILES:.c=.o) $(CPPFILES:.cpp=.o))
+
+export LD   := $(CXX)
+
+.PHONY: all clean
+
+all: $(TARGET).nds
+
+$(TARGET).elf: $(OFILES)
+
+$(BUILD)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(BUILD) $(TARGET).elf $(TARGET).nds *.map *.lst
