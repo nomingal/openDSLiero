@@ -1580,6 +1580,7 @@ void Gfx::openHiddenMenu()
 
 int Gfx::menuLoop()
 {
+	g_nds_in_game_dual = false;
 	std::memset(pal.entries, 0, sizeof(pal.entries));
 	flip();
 	process();
